@@ -4,10 +4,15 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-pillow = "*"
+flask-cors = "*"
+gunicorn = "*"
 face-recognition = "*"
 dlib = "*"
+pillow = "*"
 pillow-heif = "*"
+numpy = "*"
+pydantic = "*"
+flask = "*"
 
 [dev-packages]
 
