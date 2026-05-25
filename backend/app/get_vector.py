@@ -6,10 +6,10 @@ import json
 import sys
 from pathlib import Path
 
-from app.infrastructure.face_engine import FaceEngine
+from app.core.infrastructure.face_engine import FaceEngine
 
 
-def extract_vectors(image_path: Path, model: str = "hog"):
+def extract_vectors(image_path: Path, model: str = "buffalo_l"):
     if not image_path.is_file():
         sys.exit(f"[ERROR] File not found: {image_path}")
 
@@ -20,10 +20,10 @@ def extract_vectors(image_path: Path, model: str = "hog"):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Extract facial embedding vectors from an image using face_recognition"
+        description="Extract facial embedding vectors from an image using InsightFace"
     )
     parser.add_argument("--file", required=True, type=Path)
-    parser.add_argument("--model", choices=["hog", "cnn"], default="hog")
+    parser.add_argument("--model", default="buffalo_l")
     args = parser.parse_args()
 
     vectors = extract_vectors(args.file, model=args.model)

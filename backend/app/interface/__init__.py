@@ -1,5 +1,5 @@
-"""Public API for interface layer."""
+"""Backward-compatible imports for HTTP interface."""
 
-from .http import recognize_bp
+from app.api.http import recognize_bp
 
 __all__ = ["recognize_bp"]

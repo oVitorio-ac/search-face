@@ -2,7 +2,7 @@
 
 from flask import Flask, jsonify
 
-from app.interface import recognize_bp
+from app.api.http import recognize_bp
 
 
 def create_app() -> Flask:

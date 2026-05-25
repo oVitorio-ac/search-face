@@ -6,13 +6,17 @@ name = "pypi"
 [packages]
 flask-cors = "*"
 gunicorn = "*"
-face-recognition = "*"
-dlib = "*"
+onnxruntime = "*"
 pillow = "*"
 pillow-heif = "*"
 numpy = "*"
 pydantic = "*"
 flask = "*"
+psycopg = "*"
+sqlalchemy = "*"
+alembic = "*"
+pgvector = "*"
+insightface = "*"
 
 [dev-packages]
 

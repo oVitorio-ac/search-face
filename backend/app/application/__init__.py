@@ -1,11 +1,10 @@
-"""Public API for application layer."""
+"""Backward-compatible imports for application layer."""
 
-from .exceptions import InvalidImageError, InvalidInputError, NoFaceDetectedError
-from .recognize_faces import RecognizeFacesUseCase
+from app.core.application import InvalidImageError, InvalidInputError, NoFaceDetectedError, RecognizeFacesUseCase
 
 __all__ = [
-    "InvalidInputError",
     "InvalidImageError",
+    "InvalidInputError",
     "NoFaceDetectedError",
     "RecognizeFacesUseCase",
 ]

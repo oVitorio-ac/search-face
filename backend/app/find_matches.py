@@ -7,12 +7,12 @@ import sys
 from pathlib import Path
 from typing import List, Tuple
 
-from app.domain.matcher import FaceMatcher
-from app.domain.models import KnownPerson
-from app.infrastructure.face_engine import FaceEngine
+from app.core.domain.matcher import FaceMatcher
+from app.core.domain.models import KnownPerson
+from app.core.infrastructure.face_engine import FaceEngine
 
 
-def _first_embedding(image_path: Path, model: str = "hog"):
+def _first_embedding(image_path: Path, model: str = "buffalo_l"):
     engine = FaceEngine()
     encodings = engine.encode_file(image_path, model=model)
     if not encodings:
@@ -31,9 +31,9 @@ def main():
     )
     parser.add_argument("--query", required=True, type=Path)
     parser.add_argument("--folder", required=True, type=Path)
-    parser.add_argument("--threshold", type=float, default=0.6)
+    parser.add_argument("--threshold", type=float, default=1.0)
     parser.add_argument("--top", type=int, default=None)
-    parser.add_argument("--model", choices=["hog", "cnn"], default="hog")
+    parser.add_argument("--model", default="buffalo_l")
     args = parser.parse_args()
 
     if not args.folder.is_dir():

@@ -1,12 +1,5 @@
-"""Public API for domain layer."""
+"""Backward-compatible imports for domain layer."""
 
-from .matcher import FaceMatcher, MatchDecision
-from .models import FaceBox, FaceMatchResult, KnownPerson
+from app.core.domain import FaceBox, FaceMatchResult, FaceMatcher, KnownPerson, MatchDecision
 
-__all__ = [
-    "FaceBox",
-    "FaceMatchResult",
-    "KnownPerson",
-    "FaceMatcher",
-    "MatchDecision",
-]
+__all__ = ["FaceBox", "FaceMatchResult", "FaceMatcher", "KnownPerson", "MatchDecision"]
