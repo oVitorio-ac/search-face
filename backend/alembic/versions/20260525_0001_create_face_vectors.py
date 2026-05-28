@@ -17,7 +17,25 @@ branch_labels = None
 depends_on = None
 
 
+def _table_exists(connection, table_name: str) -> bool:
+    query = sa.text(
+        """
+        SELECT EXISTS (
+            SELECT 1
+            FROM information_schema.tables
+            WHERE table_schema = current_schema()
+              AND table_name = :table_name
+        )
+        """
+    )
+    return bool(connection.execute(query, {"table_name": table_name}).scalar_one())
+
+
 def upgrade() -> None:
+    connection = op.get_bind()
+    if _table_exists(connection, "face_vectors"):
+        return
+
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
     op.create_table(
         "face_vectors",
@@ -26,7 +44,7 @@ def upgrade() -> None:
         sa.Column("file_path", sa.Text(), nullable=False),
         sa.Column("file_name", sa.Text(), nullable=False),
         sa.Column("face_index", sa.Integer(), nullable=False),
-        sa.Column("embedding", Vector(512), nullable=False),
+        sa.Column("embedding", Vector(128), nullable=False),
         sa.Column("vector_size", sa.Integer(), nullable=False),
         sa.Column("model", sa.Text(), nullable=False),
         sa.Column("indexed_at", sa.DateTime(timezone=True), nullable=False),

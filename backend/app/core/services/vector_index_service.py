@@ -16,7 +16,7 @@ class VectorIndexService:
         iterator = folder.rglob("*") if recursive else folder.glob("*")
         return [path.resolve() for path in iterator if path.suffix.lower() in self.SUPPORTED_EXTENSIONS]
 
-    def index_folder(self, folder: Path, model: str = "buffalo_l", recursive: bool = True):
+    def index_folder(self, folder: Path, model: str = "hog", recursive: bool = True):
         images = self.find_images(folder, recursive=recursive)
         now = datetime.now(timezone.utc)
         resolved_model = self._resolve_model_name(model)

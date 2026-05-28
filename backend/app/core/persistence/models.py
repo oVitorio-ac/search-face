@@ -22,7 +22,7 @@ class FaceVector(Base):
     file_path: Mapped[str] = mapped_column(String, nullable=False)
     file_name: Mapped[str] = mapped_column(String, nullable=False)
     face_index: Mapped[int] = mapped_column(Integer, nullable=False)
-    embedding: Mapped[list[float]] = mapped_column(Vector(512), nullable=False)
+    embedding: Mapped[list[float]] = mapped_column(Vector(128), nullable=False)
     vector_size: Mapped[int] = mapped_column(Integer, nullable=False)
     model: Mapped[str] = mapped_column(String, nullable=False)
     indexed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)

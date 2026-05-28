@@ -1,4 +1,4 @@
-"""migrate face_vectors to 512d embeddings
+"""migrate face_vectors to 128d embeddings
 
 Revision ID: 20260525_0002
 Revises: 20260525_0001
@@ -76,7 +76,7 @@ def _create_face_vectors_table() -> None:
         sa.Column("file_path", sa.Text(), nullable=False),
         sa.Column("file_name", sa.Text(), nullable=False),
         sa.Column("face_index", sa.Integer(), nullable=False),
-        sa.Column("embedding", Vector(512), nullable=False),
+        sa.Column("embedding", Vector(128), nullable=False),
         sa.Column("vector_size", sa.Integer(), nullable=False),
         sa.Column("model", sa.Text(), nullable=False),
         sa.Column("indexed_at", sa.DateTime(timezone=True), nullable=False),
@@ -88,20 +88,20 @@ def upgrade() -> None:
     connection = op.get_bind()
     embedding_type = _embedding_type_name(connection)
 
-    if embedding_type == "vector(512)":
+    if embedding_type == "vector(128)":
         return
 
     if embedding_type is not None:
-        legacy_table_name = "face_vectors_legacy_128"
+        legacy_table_name = "face_vectors_legacy_512"
         if not _table_exists(connection, legacy_table_name):
             op.rename_table("face_vectors", legacy_table_name)
             if _constraint_exists(connection, legacy_table_name, "uq_face_vectors_file_face"):
                 op.execute(
                     sa.text(
                         """
-                        ALTER TABLE face_vectors_legacy_128
+                        ALTER TABLE face_vectors_legacy_512
                         RENAME CONSTRAINT uq_face_vectors_file_face
-                        TO uq_face_vectors_legacy_128_file_face
+                        TO uq_face_vectors_legacy_512_file_face
                         """
                     )
                 )
@@ -116,15 +116,15 @@ def downgrade() -> None:
     if _table_exists(connection, "face_vectors"):
         op.drop_table("face_vectors")
 
-    if _table_exists(connection, "face_vectors_legacy_128"):
-        if _constraint_exists(connection, "face_vectors_legacy_128", "uq_face_vectors_legacy_128_file_face"):
+    if _table_exists(connection, "face_vectors_legacy_512"):
+        if _constraint_exists(connection, "face_vectors_legacy_512", "uq_face_vectors_legacy_512_file_face"):
             op.execute(
                 sa.text(
                     """
-                    ALTER TABLE face_vectors_legacy_128
-                    RENAME CONSTRAINT uq_face_vectors_legacy_128_file_face
+                    ALTER TABLE face_vectors_legacy_512
+                    RENAME CONSTRAINT uq_face_vectors_legacy_512_file_face
                     TO uq_face_vectors_file_face
                     """
                 )
             )
-        op.rename_table("face_vectors_legacy_128", "face_vectors")
+        op.rename_table("face_vectors_legacy_512", "face_vectors")

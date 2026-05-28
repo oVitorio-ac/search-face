@@ -3,9 +3,16 @@
 from __future__ import annotations
 
 import os
+from pathlib import Path
 
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
+
+from app.core.env_loader import load_env_file
+
+
+_ENV_PATH = Path(__file__).resolve().parents[3] / ".env"
+load_env_file(_ENV_PATH)
 
 
 def create_engine_from_env(default_dsn: str | None = None):

@@ -2,12 +2,16 @@ from __future__ import annotations
 
 import os
 from logging.config import fileConfig
+from pathlib import Path
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
 
 from app.core.persistence.base import Base
 from app.core.persistence import models  # noqa: F401
+from app.core.env_loader import load_env_file
+
+load_env_file(Path(__file__).resolve().parents[1] / ".env")
 
 config = context.config
 

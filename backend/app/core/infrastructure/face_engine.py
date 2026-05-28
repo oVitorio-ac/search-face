@@ -1,123 +1,90 @@
-"""Infrastructure adapter over InsightFace."""
+"""Infrastructure adapter over dlib via face_recognition."""
 
-import os
 from io import BytesIO
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import List, Tuple
 
-import insightface
+import face_recognition
 import numpy as np
+import pillow_heif
 from PIL import Image
 
 from app.core.application.exceptions import InvalidImageError
 from app.core.domain.models import FaceBox
 
 
+pillow_heif.register_heif_opener()
+
+
 class FaceEngine:
-    def __init__(self):
-        self._apps: Dict[str, insightface.app.FaceAnalysis] = {}
-
     def canonical_model_name(self, model: str | None) -> str:
-        return self._resolve_model_name(model)
+        return self._resolve_detector_model(model)
 
-    def detect_and_encode(self, image_bytes: bytes, model: str = "buffalo_l") -> List[Tuple[FaceBox, np.ndarray]]:
+    def detect_and_encode(self, image_bytes: bytes, model: str = "hog") -> List[Tuple[FaceBox, np.ndarray]]:
         image_array = self._load_image_from_bytes(image_bytes)
-        faces = self._get_app(model).get(image_array)
+        locations = face_recognition.face_locations(image_array, model=self._resolve_detector_model(model))
+        encodings = face_recognition.face_encodings(image_array, known_face_locations=locations)
 
         results: List[Tuple[FaceBox, np.ndarray]] = []
-        for face in faces:
-            box = self._box_from_face(face.bbox)
-            results.append((box, self._normalize_embedding(face.embedding)))
+        for location, encoding in zip(locations, encodings):
+            results.append((self._box_from_location(location), self._to_vector(encoding)))
 
         return results
 
-    def encode_file(self, image_path: Path, model: str = "buffalo_l") -> List[np.ndarray]:
+    def encode_file(self, image_path: Path, model: str = "hog") -> List[np.ndarray]:
         if not image_path.is_file():
             raise FileNotFoundError(f"File not found: {image_path}")
-        image = self._load_image_from_path(image_path)
-        faces = self._get_app(model).get(image)
-        return [self._normalize_embedding(face.embedding) for face in faces]
 
-    def detect_with_landmarks(self, image_bytes: bytes, model: str = "buffalo_l") -> List[Tuple[FaceBox, dict]]:
+        image = self._load_image_from_path(image_path)
+        locations = face_recognition.face_locations(image, model=self._resolve_detector_model(model))
+        encodings = face_recognition.face_encodings(image, known_face_locations=locations)
+        return [self._to_vector(encoding) for encoding in encodings]
+
+    def detect_with_landmarks(self, image_bytes: bytes, model: str = "hog") -> List[Tuple[FaceBox, dict]]:
         image_array = self._load_image_from_bytes(image_bytes)
-        faces = self._get_app(model).get(image_array)
+        locations = face_recognition.face_locations(image_array, model=self._resolve_detector_model(model))
+        landmarks = face_recognition.face_landmarks(image_array, face_locations=locations)
 
         results: List[Tuple[FaceBox, dict]] = []
-        for face in faces:
-            box = self._box_from_face(face.bbox)
-            results.append((box, self._landmarks_from_face(face)))
+        for location, landmark in zip(locations, landmarks):
+            results.append((self._box_from_location(location), self._landmarks_from_dlib(landmark)))
 
         return results
 
     def _load_image_from_bytes(self, image_bytes: bytes):
         try:
             with Image.open(BytesIO(image_bytes)) as img:
-                return self._pil_to_bgr(img)
+                return np.array(img.convert("RGB"))
         except Exception as exc:
             raise InvalidImageError("Invalid or unsupported image") from exc
 
     def _load_image_from_path(self, image_path: Path) -> np.ndarray:
         try:
             with Image.open(image_path) as img:
-                return self._pil_to_bgr(img)
+                return np.array(img.convert("RGB"))
         except Exception as exc:
             raise InvalidImageError("Invalid or unsupported image") from exc
 
-    def _pil_to_bgr(self, image: Image.Image) -> np.ndarray:
-        rgb_array = np.array(image.convert("RGB"))
-        return rgb_array[:, :, ::-1]
-
-    def _get_app(self, model: str) -> insightface.app.FaceAnalysis:
-        model_name = self._resolve_model_name(model)
-        app = self._apps.get(model_name)
-        if app is not None:
-            return app
-
-        providers = [
-            provider.strip()
-            for provider in os.getenv("INSIGHTFACE_PROVIDERS", "CPUExecutionProvider").split(",")
-            if provider.strip()
-        ]
-        det_size = int(os.getenv("FACE_DET_SIZE", "640"))
-        ctx_id = int(os.getenv("FACE_CTX_ID", "0"))
-
-        app = insightface.app.FaceAnalysis(name=model_name, providers=providers)
-        app.prepare(ctx_id=ctx_id, det_size=(det_size, det_size))
-        self._apps[model_name] = app
-        return app
-
-    def _resolve_model_name(self, model: str | None) -> str:
-        if model in {"hog", "cnn", "", None}:
-            return os.getenv("FACE_MODEL", "buffalo_l")
+    def _resolve_detector_model(self, model: str | None) -> str:
+        if model in {"", None}:
+            return "hog"
+        if model not in {"hog", "cnn"}:
+            return "hog"
         return model
 
-    def _box_from_face(self, bbox: np.ndarray) -> FaceBox:
-        left, top, right, bottom = bbox.astype(int).tolist()
-        return FaceBox(top=top, right=right, bottom=bottom, left=left)
+    def _box_from_location(self, location: tuple[int, int, int, int]) -> FaceBox:
+        top, right, bottom, left = location
+        return FaceBox(top=int(top), right=int(right), bottom=int(bottom), left=int(left))
 
-    def _landmarks_from_face(self, face) -> dict:
-        keypoints = getattr(face, "kps", None)
-        if keypoints is None or len(keypoints) < 5:
-            return {}
-
-        left_eye = tuple(int(value) for value in keypoints[0])
-        right_eye = tuple(int(value) for value in keypoints[1])
-        nose = tuple(int(value) for value in keypoints[2])
-        mouth_left = tuple(int(value) for value in keypoints[3])
-        mouth_right = tuple(int(value) for value in keypoints[4])
-
+    def _landmarks_from_dlib(self, landmarks: dict) -> dict:
         return {
-            "left_eye": [left_eye],
-            "right_eye": [right_eye],
-            "nose_tip": [nose],
-            "top_lip": [mouth_left],
-            "bottom_lip": [mouth_right],
-            "landmark_style": "insightface_5pt",
+            "left_eye": [tuple(point) for point in landmarks.get("left_eye", [])],
+            "right_eye": [tuple(point) for point in landmarks.get("right_eye", [])],
+            "nose_tip": [tuple(point) for point in landmarks.get("nose_tip", [])],
+            "top_lip": [tuple(point) for point in landmarks.get("top_lip", [])],
+            "bottom_lip": [tuple(point) for point in landmarks.get("bottom_lip", [])],
+            "landmark_style": "dlib_68",
         }
 
-    def _normalize_embedding(self, embedding: np.ndarray) -> np.ndarray:
-        vector = np.asarray(embedding, dtype=np.float32)
-        norm = np.linalg.norm(vector)
-        if norm == 0:
-            return vector
-        return vector / norm
+    def _to_vector(self, encoding: np.ndarray) -> np.ndarray:
+        return np.asarray(encoding, dtype=np.float32)

@@ -6,7 +6,6 @@ name = "pypi"
 [packages]
 flask-cors = "*"
 gunicorn = "*"
-onnxruntime = "*"
 pillow = "*"
 pillow-heif = "*"
 numpy = "*"
@@ -16,7 +15,8 @@ psycopg = "*"
 sqlalchemy = "*"
 alembic = "*"
 pgvector = "*"
-insightface = "*"
+face-recognition = "*"
+dlib = "*"
 
 [dev-packages]
 

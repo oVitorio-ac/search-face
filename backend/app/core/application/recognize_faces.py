@@ -13,8 +13,8 @@ class RecognizeFacesUseCase:
         self,
         face_engine: FaceEngine,
         matcher: FaceMatcher,
-        threshold: float = 1.0,
-        model: str = "buffalo_l",
+        threshold: float = 0.6,
+        model: str = "hog",
     ):
         self.face_engine = face_engine
         self.matcher = matcher

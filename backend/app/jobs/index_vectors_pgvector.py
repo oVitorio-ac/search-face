@@ -18,15 +18,15 @@ def main():
     )
     parser.add_argument("--folder", required=True, type=Path, help="Folder containing images")
     parser.add_argument(
+        "--dsn",
         "--pg-dsn",
-        default=os.getenv("PG_DSN", "postgresql+psycopg://postgres:postgres@localhost:5433/face_search"),
+        dest="dsn",
+        default=os.getenv("DATABASE_URL")
+        or os.getenv("PG_DSN")
+        or "postgresql+psycopg://postgres:postgres@localhost:5433/face_search",
+        help="Database DSN. DATABASE_URL is preferred.",
     )
-    parser.add_argument(
-        "--table",
-        default=os.getenv("PG_TABLE", "face_vectors"),
-        help="Deprecated: table is fixed by ORM entity and migrations",
-    )
-    parser.add_argument("--model", default=os.getenv("FACE_MODEL", "buffalo_l"))
+    parser.add_argument("--model", choices=["hog", "cnn"], default=os.getenv("FACE_MODEL", "hog"))
     parser.add_argument("--no-recursive", action="store_true")
     parser.add_argument(
         "--upsert",
@@ -38,10 +38,8 @@ def main():
     folder = args.folder.resolve()
     if not folder.is_dir():
         sys.exit(f"[ERROR] Folder does not exist or is not a directory: {folder}")
-    if args.table != "face_vectors":
-        print("[WARN] --table is deprecated and ignored. Using face_vectors.")
 
-    session_factory = create_session_factory(dsn=args.pg_dsn)
+    session_factory = create_session_factory(dsn=args.dsn)
     with session_factory() as session:
         repository = SQLAlchemyFaceVectorRepository(session=session)
         service = FaceVectorIndexingService(
